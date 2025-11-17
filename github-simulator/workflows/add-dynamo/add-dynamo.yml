@@ -1,0 +1,16 @@
+name: Add DynamoDB Workflow
+
+on:
+  repository_dispatch:
+    types: [add-dynamo-command]
+
+jobs:
+  create-dynamo-table:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Create DynamoDB table
+      run: |
+        echo "🗃️ Creating DynamoDB table for ${{ github.event.client_payload.artifact_name }}"
+        # Mock DynamoDB creation logic
+        sleep 3
+        echo "✅ DynamoDB table created successfully"

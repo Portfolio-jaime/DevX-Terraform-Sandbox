@@ -1,0 +1,68 @@
+# Docker Compose for British Airways DevX Terraform Sandbox
+# Provides AWS services mocking via LocalStack
+
+version: '3.8'
+
+services:
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"  # AWS SDK endpoint
+      - "4571:4571"  # Edge service
+    environment:
+      # Core LocalStack settings
+      - SERVICES=s3,ecr,dynamodb,rds,iam,ec2,sts,cloudformation
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - HOST_TMP_FOLDER=/tmp/localstack
+      - LAMBDA_EXECUTOR=docker
+      - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY:-}
+      - KINESIS_ERROR_PROBABILITY=0.0
+      - EDGE_PORT=4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_SECURITY_TOKEN=test
+      - AWS_SESSION_TOKEN=test
+      
+    volumes:
+      - localstack_data:/tmp/localstack
+      - "/var/run/docker.sock:/var.stack/run/docker.sock"
+      - "./aws-setup:/etc/localstack/init/ready.d"  # Initialization scripts
+
+  # Mock GitHub Actions runner
+  github-runner:
+    image: ubuntu:22.04
+    container_name: github-simulator
+    profiles:
+      - github
+    command: |
+      bash -c "
+        apt-get update && apt-get install -y curl git jq
+        echo '🐙 GitHub Actions Simulator Ready'
+        while true; do sleep 30; done
+      "
+    volumes:
+      - ../github-simulator/workflows:/workflows
+      - ../github-simulator/mock-repos:/repos
+
+  # Monitoring and logging
+  monitoring:
+    image: prom/prometheus:latest
+    container_name: sandbox-monitoring
+    profiles:
+      - monitoring
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml
+
+volumes:
+  localstack_data:
+    driver: local
+
+networks:
+  default:
+    name: ba-sandbox-net

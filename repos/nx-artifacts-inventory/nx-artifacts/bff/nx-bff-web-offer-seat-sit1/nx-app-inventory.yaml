@@ -1,0 +1,43 @@
+schema_version: "1.0"
+
+artifact_metadata:
+  artifact_name: "nx-bff-web-offer-seat-sit1"
+  layer: "bff"
+  domain: "web"
+  service: "web-offer-seat"
+  description: "Nexus web-offer-seat for bff layer in sit1"
+  owner: "devx-team"
+
+infrastructure:
+  enabled: false
+  deployed: false
+  component: "service_account"
+  environment: "sit1"
+
+components:
+  service_account:
+    name: "sa-nx-bff-web-offer-seat-sit1"
+    namespace: "nexus-sit1"
+    enabled: false
+    
+  redis:
+    name: ""
+    cluster_id: ""
+    endpoint: ""
+    enabled: false
+    
+  dynamo:
+    table_name: ""
+    partition_key: ""
+    sort_key: ""
+    enabled: false
+    
+  rds:
+    instance_class: ""
+    engine: ""
+    enabled: false
+    
+  ecr:
+    repository_name: "nx-bff-web-offer-seat-sit1"
+    image_tag: "latest"
+    enabled: false

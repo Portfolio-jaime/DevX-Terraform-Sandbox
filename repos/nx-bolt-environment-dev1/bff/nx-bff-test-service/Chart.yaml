@@ -1,0 +1,5 @@
+apiVersion: v2
+name: nx-bff-test-service
+description: British Airways Nexus bff layer service
+version: 1.0.0
+appVersion: "1.0"

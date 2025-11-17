@@ -1,0 +1,117 @@
+name: Add Redis Workflow
+
+on:
+  repository_dispatch:
+    types: [add-redis-command]
+  workflow_dispatch:
+    inputs:
+      artifact_name:
+        description: 'Artifact name'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+        - dev1
+        - sit1
+        - uat1
+        - prod1
+
+jobs:
+  pre-validate-inventory:
+    runs-on: ubuntu-latest
+    outputs:
+      changes_detected: ${{ steps.check.outputs.changes_detected }}
+    steps:
+    - name: Validate Redis prerequisites
+      id: check
+      run: |
+        echo "🔍 Pre-validating Redis setup for ${{ github.event.client_payload.artifact_name }}"
+        
+        # Check if service account is deployed
+        echo "Checking service account deployment..."
+        # Mock check - in real scenario would check AWS/nexus-infrastructure
+        echo "changes_detected=true" >> $GITHUB_OUTPUT
+        
+    - name: Update inventory for Redis
+      run: |
+        ARTIFACT_NAME="${{ github.event.client_payload.artifact_name }}"
+        ENVIRONMENT="${{ github.event.client_payload.environment }}"
+        
+        INVENTORY_FILE="nx-artifacts/$(echo $ARTIFACT_NAME | cut -d'-' -f2)/$ARTIFACT_NAME/nx-$ENVIRONMENT-inventory.yaml"
+        
+        if [ -f "$INVENTORY_FILE" ]; then
+          # Update inventory to enable Redis
+          sed -i 's/redis:/redis:\n    enabled: true\n    name: "redis-'"$ARTIFACT_NAME"'-'"$ENVIRONMENT"'"\n    cluster_id: "'"$ENVIRONMENT"'-bc-'"$ARTIFACT_NAME"'"' $INVENTORY_FILE
+          echo "✅ Redis configuration updated in inventory"
+        else
+          echo "❌ Inventory file not found: $INVENTORY_FILE"
+          exit 1
+        fi
+
+  modify-inventory:
+    needs: pre-validate-inventory
+    runs-on: ubuntu-latest
+    if: needs.pre-validate-inventory.outputs.changes_detected == 'true'
+    steps:
+    - name: Commit Redis configuration
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "feat(redis): Enable Redis for ${{ github.event.client_payload.artifact_name }} in ${{ github.event.client_payload.environment }}" || echo "No changes"
+        git push
+
+  comments-handler:
+    needs: [pre-validate-inventory, modify-inventory]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Notify Redis readiness
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const changesDetected = context.payload.inputs?.changes_detected || 'true';
+          
+          if (changesDetected === 'true') {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🟢 Redis Configuration Updated
+            
+            **Artifact**: ${{ github.event.client_payload.artifact_name }}
+            **Environment**: ${{ github.event.client_payload.environment }}
+            
+            Redis has been enabled for this artifact. Now run:
+            
+            \`/approve-infra-creation --env=${{ github.event.client_payload.environment }}\`
+            
+            This will provision:
+            - Redis ElastiCache cluster
+            - Security groups
+            - Subnet groups
+            - Auto-configuration in Helm values
+            
+            ---
+            *Ready for infrastructure deployment*`
+            });
+          } else {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ⚠️ Infrastructure Already Exists
+            
+            **Artifact**: ${{ github.event.client_payload.artifact_name }}
+            **Environment**: ${{ github.event.client_payload.environment }}
+            
+            Redis infrastructure is already deployed for this artifact.
+            
+            **Action Required**: Contact a Platform Engineer to verify the configuration.
+            
+            ---
+            *Manual review required*`
+            });
+          }

@@ -1,0 +1,50 @@
+# British Airways Nexus Service Configuration
+replicaCount: 2
+
+image:
+  repository: nx-registry.nexus.britishairways.com/bff/web-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - host: web-service.dev1.nexus.britishairways.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+external:
+  redis:
+    enabled: false
+    endpoint: ""
+    user: ""
+    group_id: ""
+    master: ""
+  
+  dynamodb:
+    enabled: false
+    table_name: ""
+    region: ""
+    endpoint: ""

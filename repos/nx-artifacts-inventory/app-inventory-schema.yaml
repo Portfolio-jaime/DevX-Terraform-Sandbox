@@ -1,0 +1,45 @@
+# British Airways Nexus Artifact Inventory Schema
+schema_version: "1.0"
+
+artifact_metadata:
+  artifact_name: string  # Required: artifact identifier
+  layer: string         # Required: al|bal|bb|bc|bff|tc|xp
+  domain: string        # Required: web|mobile|customer|payment|etc
+  service: string       # Required: specific service name
+  description: string   # Optional: artifact description
+  owner: string         # Required: team or owner
+
+infrastructure:
+  enabled: boolean      # Required: whether infra creation is enabled
+  deployed: boolean     # Required: whether infra is deployed
+  component: string     # Required: service_account|redis|dynamo|rds|ecr
+  environment: string   # Required: dev1|sit1|uat1|prod1
+
+# AWS Components Configuration
+components:
+  service_account:
+    name: string
+    namespace: string
+    enabled: boolean
+    
+  redis:
+    name: string
+    cluster_id: string
+    endpoint: string
+    enabled: boolean
+    
+  dynamo:
+    table_name: string
+    partition_key: string
+    sort_key: string
+    enabled: boolean
+    
+  rds:
+    instance_class: string
+    engine: string
+    enabled: boolean
+    
+  ecr:
+    repository_name: string
+    image_tag: string
+    enabled: boolean

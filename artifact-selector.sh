@@ -22,8 +22,11 @@ list_available_artifacts() {
     echo "📦 Available Artifacts in Sandbox:"
     echo ""
     
+    # Create a temporary file to store artifacts data
+    ARTIFACTS_FILE="/tmp/artifact_selector_$$.tmp"
+    > "$ARTIFACTS_FILE"
+    
     COUNTER=1
-    declare -A ARTIFACTS
     
     # Search in nx-artifacts-inventory
     for layer_dir in al bal bb bc bff ch dev lib sdk tc xp; do
@@ -40,7 +43,8 @@ list_available_artifacts() {
                     echo "    Layer: $LAYER | Environments: $ENV_COUNT | Path: $artifact_dir"
                     echo ""
                     
-                    ARTIFACTS[$COUNTER]="$ARTIFACT_NAME|$LAYER|$artifact_dir"
+                    # Store in temporary file
+                    echo "$COUNTER|$ARTIFACT_NAME|$LAYER|$artifact_dir|unknown" >> "$ARTIFACTS_FILE"
                     ((COUNTER++))
                 fi
             done
@@ -68,7 +72,8 @@ list_available_artifacts() {
                                 echo "    Layer: $LAYER | Environment: $ENV_NAME | Path: $service_dir"
                                 echo ""
                                 
-                                ARTIFACTS[$COUNTER]="$SERVICE_NAME|$LAYER|$service_dir|$ENV_NAME"
+                                # Store in temporary file
+                                echo "$COUNTER|$SERVICE_NAME|$LAYER|$service_dir|$ENV_NAME" >> "$ARTIFACTS_FILE"
                                 ((COUNTER++))
                             fi
                         fi
@@ -77,14 +82,44 @@ list_available_artifacts() {
             done
         fi
     done
+    
+    # Export the file path for other functions
+    export ARTIFACTS_FILE
+}
+
+get_artifact_info() {
+    local choice=$1
+    
+    if [[ ! -f "$ARTIFACTS_FILE" ]]; then
+        echo "❌ No artifacts data found. Please run list_available_artifacts first."
+        return 1
+    fi
+    
+    # Extract artifact info from temporary file
+    IFS='|' read -r NUMBER ARTIFACT_NAME LAYER ARTIFACT_PATH ENV_NAME < <(grep "^$choice|" "$ARTIFACTS_FILE" | head -1)
+    
+    if [[ -z "$ARTIFACT_NAME" ]]; then
+        echo "❌ Invalid choice. Please try again."
+        return 1
+    fi
+    
+    # Return the artifact info
+    echo "$ARTIFACT_NAME|$LAYER|$ARTIFACT_PATH|$ENV_NAME"
 }
 
 clone_artifact_for_testing() {
     local choice=$1
-    IFS='|' read -r ARTIFACT_NAME LAYER ARTIFACT_PATH ENV_NAME <<< "${ARTIFACTS[$choice]}"
     
     echo ""
     echo "🔄 Preparing artifact for local testing..."
+    
+    ARTIFACT_INFO=$(get_artifact_info "$choice")
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+    
+    IFS='|' read -r ARTIFACT_NAME LAYER ARTIFACT_PATH ENV_NAME <<< "$ARTIFACT_INFO"
+    
     echo "Artifact: $ARTIFACT_NAME"
     echo "Layer: $LAYER"
     echo "Path: $ARTIFACT_PATH"
@@ -119,10 +154,19 @@ clone_artifact_for_testing() {
 
 run_test_with_artifact() {
     local choice=$1
-    IFS='|' read -r ARTIFACT_NAME LAYER ARTIFACT_PATH ENV_NAME <<< "${ARTIFACTS[$choice]}"
     
     echo ""
-    echo "🧪 Running test with artifact: $(basename "$ARTIFACT_NAME")"
+    echo "🧪 Running test with artifact..."
+    
+    ARTIFACT_INFO=$(get_artifact_info "$choice")
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+    
+    IFS='|' read -r ARTIFACT_NAME LAYER ARTIFACT_PATH ENV_NAME <<< "$ARTIFACT_INFO"
+    
+    echo "Artifact: $ARTIFACT_NAME"
+    echo "Layer: $LAYER"
     echo ""
     
     # Extract the service name for artifact search
@@ -152,7 +196,9 @@ show_menu() {
 # Main Menu Loop
 # ============================================================================
 
-declare -A ARTIFACTS
+# Initialize variables
+ARTIFACTS_FILE=""
+choice=""
 
 while true; do
     clear
@@ -169,8 +215,8 @@ while true; do
             list_available_artifacts
             echo ""
             read -p "Enter artifact number to test: " test_choice
-            if [[ -n "${ARTIFACTS[$test_choice]}" ]]; then
-                run_test_with_artifact $test_choice
+            if [[ -n "$test_choice" ]] && [[ -f "$ARTIFACTS_FILE" ]] && grep -q "^$test_choice|" "$ARTIFACTS_FILE" 2>/dev/null; then
+                run_test_with_artifact "$test_choice"
                 echo ""
                 echo "✅ Test completed! Review the results above."
                 echo ""
@@ -185,8 +231,8 @@ while true; do
             list_available_artifacts
             echo ""
             read -p "Enter artifact number to clone: " clone_choice
-            if [[ -n "${ARTIFACTS[$clone_choice]}" ]]; then
-                clone_artifact_for_testing $clone_choice
+            if [[ -n "$clone_choice" ]] && [[ -f "$ARTIFACTS_FILE" ]] && grep -q "^$clone_choice|" "$ARTIFACTS_FILE" 2>/dev/null; then
+                clone_artifact_for_testing "$clone_choice"
                 echo ""
                 read -p "Press Enter to continue..."
             else
@@ -197,6 +243,8 @@ while true; do
             ;;
         4)
             echo "👋 Goodbye!"
+            # Clean up temporary file
+            [[ -f "$ARTIFACTS_FILE" ]] && rm -f "$ARTIFACTS_FILE"
             exit 0
             ;;
         *)
@@ -205,4 +253,7 @@ while true; do
             read -p "Press Enter to continue..."
             ;;
     esac
+    
+    # Clean up temporary file after each iteration
+    [[ -f "$ARTIFACTS_FILE" ]] && rm -f "$ARTIFACTS_FILE"
 done

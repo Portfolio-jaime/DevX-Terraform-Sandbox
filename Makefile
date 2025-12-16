@@ -1,134 +1,103 @@
 # British Airways DevX Terraform Sandbox Makefile
 
-.PHONY: setup test-all test-cli clean setup-aws setup-github setup-repos test-workflows test-integration
+.PHONY: setup test-all test-cli test-real-cli test-unit test-security clean
 
-# Default environment variables
-ENVIRONMENT ?= dev1
-ARTIFACT_NAME ?= test-artifact
-CLI_PATH ?= ../cli-tester
-AWS_MOCK_PORT ?= 4566
+# Paths
+CLI_PATH ?= cli-real
+SANDBOX_ROOT := $(shell pwd)
 
-## Main Setup Commands
+## Setup Commands
 
-setup: ## Initialize complete sandbox environment
-	@echo "🚀 Setting up British Airways DevX Terraform Sandbox..."
-	@$(MAKE) setup-aws
-	@$(MAKE) setup-github
-	@$(MAKE) setup-repos
-	@$(MAKE) build-cli
-	@echo "✅ Sandbox setup complete!"
+setup: ## Initialize sandbox with real CLI
+	@echo "🚀 Setting up DevX Sandbox..."
+	@chmod +x tests/*.sh *.sh
+	@./tests/setup-real-cli.sh
+	@echo "✅ Sandbox ready!"
 
-test-all: ## Run all test suites
-	@echo "🧪 Running comprehensive test suite..."
-	@$(MAKE) test-cli
-	@$(MAKE) test-workflows
-	@$(MAKE) test-integration
-	@$(MAKE) test-terraform
-	@echo "✅ All tests completed!"
-
-## AWS Mocking Setup
-
-setup-aws: ## Initialize LocalStack AWS mock environment
-	@echo "☁️ Setting up AWS mock environment..."
-	@docker-compose -f config/docker-compose.yml up -d localstack
-	@sleep 10
-	@aws --endpoint-url=http://localhost:4566 sts get-caller-identity || echo "LocalStack not ready yet"
-
-clean-aws: ## Clean up AWS mock environment
-	@echo "🧹 Cleaning up AWS mock environment..."
-	@docker-compose -f config/docker-compose.yml down
-	@docker system prune -f
-
-## GitHub Simulation Setup
-
-setup-github: ## Initialize GitHub Actions simulator
-	@echo "🐙 Setting up GitHub Actions simulator..."
-	@mkdir -p github-simulator/workflows
-	@mkdir -p github-simulator/mock-repos
-	@./scripts/setup-github-simulator.sh
-
-## Repository Mocking Setup
-
-setup-repos: ## Setup mock repository structures
-	@echo "📁 Setting up mock repository structures..."
-	@./scripts/setup-mock-repos.sh
-
-build-cli: ## Build the Terraform Nexus Builder CLI
-	@echo "🔨 Building Terraform Nexus Builder CLI..."
-	@cd $(CLI_PATH) && make build
+setup-local-cli: ## Use local CLI instead of cloning
+	@echo "🔗 Linking local CLI..."
+	@export LOCAL_CLI_PATH=$(CLI_PATH) && ./tests/setup-real-cli.sh
 
 ## Testing Commands
 
-test-cli: ## Test all CLI commands
-	@echo "🖥️ Testing CLI commands..."
+test-all: test-unit test-real-cli test-security test-integration test-e2e ## Run all test suites
+	@echo "✅ All tests completed!"
+
+test-unit: ## Run Go unit tests
+	@echo "🧪 Running unit tests..."
+	@cd nx-sandbox && go test -v ./...
+
+test-real-cli: ## Test with real CLI
+	@echo "🔧 Testing real CLI..."
+	@./tests/test-with-real-cli.sh
+
+test-cli: ## Test with mock CLI (legacy)
+	@echo "🖥️  Testing mock CLI..."
 	@./tests/test-cli-commands.sh
 
-test-cli COMMAND=redis: ## Test specific CLI command
-	@echo "🖥️ Testing CLI command: $(COMMAND)"
-	@./tests/test-cli-command.sh $(COMMAND)
+test-security: ## Run security tests
+	@echo "🔒 Running security tests..."
+	@./tests/security_test.sh
 
-test-workflows: ## Test GitHub workflow simulations
-	@echo "🔄 Testing workflow simulations..."
-	@./tests/test-workflows.sh
-
-test-integration: ## Test end-to-end integration
-	@echo "🔗 Testing integration scenarios..."
+test-integration: ## Run integration tests
+	@echo "🔗 Running integration tests..."
 	@./tests/test-integration.sh
 
-test-terraform: ## Test Terraform validation
-	@echo "🧱 Testing Terraform validation..."
+test-terraform: ## Run Terraform tests
+	@echo "🏗️  Running Terraform tests..."
 	@./tests/test-terraform.sh
 
-test-errors: ## Test error handling scenarios
-	@echo "❌ Testing error handling..."
-	@./tests/test-errors.sh
+test-e2e: ## Run end-to-end tests
+	@echo "🔄 Running E2E tests..."
+	@./tests/e2e_test.sh
+
+benchmark: ## Run Go benchmarks
+	@echo "⚡ Running benchmarks..."
+	@cd nx-sandbox && go test -bench=. ./...
 
 ## Development Commands
 
-dev-cli: ## Development mode for CLI testing
-	@echo "👨‍💻 Starting CLI in development mode..."
-	@cd $(CLI_PATH) && go run . --debug
+build-cli: ## Build nx-sandbox CLI
+	@echo "🔨 Building nx-sandbox..."
+	@cd nx-sandbox && go build -o nx-sandbox
 
-shell-aws: ## Access LocalStack shell
-	@echo "🐚 Opening LocalStack shell..."
-	@aws --endpoint-url=http://localhost:4566 --profile=localstack shell
+run-sandbox: build-cli ## Run nx-sandbox
+	@./nx-sandbox/nx-sandbox
 
-## Monitoring Commands
+dev-test: ## Quick development test cycle
+	@make test-unit
+	@make test-real-cli
 
-logs: ## Show all logs
-	@echo "📊 Showing sandbox logs..."
-	@docker-compose -f config/docker-compose.yml logs
+## Validation Commands
 
-monitor: ## Start monitoring dashboard
-	@echo "📈 Starting monitoring dashboard..."
-	@./scripts/start-monitoring.sh
+validate: ## Validate before commit
+	@echo "✓ Running pre-commit validation..."
+	@make test-unit
+	@make test-security
+	@echo "✅ Validation passed!"
+
+lint: ## Lint Go code
+	@cd nx-sandbox && golangci-lint run || go fmt ./...
 
 ## Cleanup Commands
 
-clean: ## Clean up everything
-	@echo "🧹 Cleaning up sandbox..."
-	@$(MAKE) clean-aws
-	@rm -rf cli-tester/bin
-	@rm -rf github-simulator/mock-repos
-	@rm -rf terraform/test-plans
-	@rm -rf logs/
-	@echo "✅ Cleanup complete!"
+clean: ## Clean test artifacts
+	@echo "🧹 Cleaning..."
+	@rm -rf test-artifacts/* local-artifacts/*
+	@rm -f tf_nx
+	@echo "✅ Cleaned!"
 
-clean-all: clean ## Complete reset including Docker
-	@echo "🔄 Complete reset..."
-	@docker system prune -af
-	@docker volume prune -f
+clean-all: clean ## Full cleanup including CLI
+	@rm -rf cli-real
+	@cd nx-sandbox && go clean
 
-## Documentation Commands
+## Help
 
-docs: ## Generate documentation
-	@echo "📚 Generating documentation..."
-	@./scripts/generate-docs.sh
-
-help: ## Show this help message
-	@echo "British Airways DevX Terraform Sandbox"
+help: ## Show this help
+	@echo "DevX Terraform Sandbox"
 	@echo ""
 	@echo "Usage: make [target]"
 	@echo ""
-	@echo "Targets:"
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+.DEFAULT_GOAL := help

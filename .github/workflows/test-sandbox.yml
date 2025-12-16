@@ -1,0 +1,90 @@
+name: Sandbox Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Run Unit Tests
+        run: |
+          cd nx-sandbox
+          go mod download
+          go test -v -cover ./...
+
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./nx-sandbox/coverage.out
+
+  integration-tests:
+    name: Integration Tests (Real CLI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Setup CLI
+        run: |
+          chmod +x tests/*.sh *.sh
+          # Configurar con CLI real del repo (si existe)
+          # O usar mock como fallback
+          ./tests/setup-real-cli.sh || echo "Using mock CLI"
+
+      - name: Run Integration Tests
+        run: |
+          make test-integration
+
+      - name: Upload Test Logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration-test-logs
+          path: /tmp/cli-*-test-*/
+
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run Security Tests
+        run: |
+          chmod +x tests/*.sh
+          ./tests/security_test.sh
+
+      - name: Secret Scanning
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+
+  test-summary:
+    name: Test Summary
+    needs: [unit-tests, integration-tests, security-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Unit Tests: ${{ needs.unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Integration Tests: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Security Tests: ${{ needs.security-tests.result }}" >> $GITHUB_STEP_SUMMARY

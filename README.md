@@ -8,12 +8,14 @@
 
 El **DevX Sandbox System** es un ambiente de desarrollo local completo que permite a los desarrolladores de DevX probar, depurar y validar comandos sin afectar repositorios reales de producción.
 
-### ✨ Características Principales
-- 🧪 **Testing Seguro**: Probar comandos sin afectar repositorios reales
-- 📦 **Clonación Inteligente**: Obtener repos reales desde GitHub para testing local
-- 🔄 **Iteración Rápida**: Desarrollar y depurar en minutos
-- 📊 **Testing Automático**: Suite completa de tests automatizados
-- 🛠️ **Herramientas Integradas**: Selector de artifacts, clonador, tester
+### ✨ Key Features
+- 🧪 **Safe Testing**: Test commands without affecting real repositories
+- 📦 **Smart Cloning**: Get real repos from GitHub for local testing
+- 🔄 **Fast Iteration**: Develop and debug in minutes
+- 📊 **Automated Testing**: Complete test suite including E2E with LocalStack
+- 🛠️ **Integrated Tools**: Artifact selector, cloner, tester
+- ☁️ **AWS LocalStack**: Complete AWS service simulation (IAM, ECR, S3, DynamoDB, Redis, RDS)
+- 🎯 **E2E Testing**: Full infrastructure deployment testing with 50+ AWS resources
 
 ---
 
@@ -56,53 +58,69 @@ graph TB
 
 ---
 
-## 🚀 Inicio Rápido
+## 🚀 Quick Start
 
-### ✅ Prerrequisitos
+### ✅ Prerequisites
 ```bash
-git --version      # Git instalado
-bash --version     # Bash disponible
+git --version      # Git installed
+bash --version     # Bash available
+docker --version   # Docker (for LocalStack - optional)
 ```
 
-### 📥 Instalación
+### 📥 Installation
 ```bash
-# 1. Ir al directorio del sandbox
+# 1. Navigate to sandbox directory
 cd /Users/jaime.henao/arheanja/DevX-Terraform-Sandbox
 
-# 2. Hacer scripts ejecutables
+# 2. Make scripts executable
 chmod +x *.sh
 
-# 3. Verificar instalación
-./artifact-selector.sh
+# 3. Setup sandbox and CLI
+make setup
+
+# 4. (Optional) Setup AWS LocalStack for E2E testing
+make setup-aws
 ```
 
-### 🎯 Primera Ejecución
+### 🎯 First Run
 ```bash
 # Opción A: Usar artifacts existentes
 ./artifact-selector.sh
 # Elegir opción 2, luego artifact #1
 
-# Opción B: Clonar repositorio real
+# Option B: Clone real repository
 ./clone-artifact-from-github.sh BritishAirways-Nexus nx-tc-order-creator
 ./test-review-artifact.sh --artifact order-creator
+
+# Option C: Run E2E tests with AWS LocalStack
+make setup-aws     # Start LocalStack + initialize 50+ AWS resources
+make test-e2e      # Run complete E2E test suite
 ```
 
 ---
 
-## 📋 Documentación Completa
+## 📋 Complete Documentation
 
-### 📖 Guías de Usuario
-| Documento | Descripción | Audiencia |
+### 📖 User Guides
+| Document | Description | Audience |
 |-----------|-------------|-----------|
-| **[🚀 QUICK_START_GUIDE.md](docs/QUICK_START_GUIDE.md)** | Guía paso a paso completa | Todos los usuarios |
-| **[💼 PRACTICAL_USE_CASES.md](docs/PRACTICAL_USE_CASES.md)** | 6 casos de uso detallados | Desarrolladores avanzados |
-| **[❓ TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** | FAQ y soluciones de problemas | Soporte técnico |
+| **[🚀 Quick Start Guide](docs/QUICK_START_GUIDE.md)** | Complete step-by-step guide | All users |
+| **[💼 Practical Use Cases](docs/PRACTICAL_USE_CASES.md)** | 6 detailed use cases | Advanced developers |
+| **[☁️ AWS Testing Guide](docs/AWS_TESTING_GUIDE.md)** | Complete AWS/LocalStack guide (20+ pages) | DevOps/Testing |
+| **[❓ Troubleshooting](docs/TROUBLESHOOTING.md)** | FAQ and problem solutions | Technical support |
 
-### 🔧 Documentación Técnica
-| Documento | Descripción | Audiencia |
+### 🔧 Technical Documentation
+| Document | Description | Audience |
 |-----------|-------------|-----------|
-| **[🏗️ TECHNICAL_ARCHITECTURE.md](docs/TECHNICAL_ARCHITECTURE.md)** | Arquitectura técnica detallada | Arquitectos/DevOps |
-| **[🔧 SISTEMA_TESTING_LOCAL.md](docs/SISTEMA_TESTING_LOCAL.md)** | Resumen del sistema completo | Técnicos/Managers |
+| **[🏗️ Technical Architecture](docs/TECHNICAL_ARCHITECTURE.md)** | Detailed technical architecture | Architects/DevOps |
+| **[🧪 Testing Guide](docs/TESTING_GUIDE.md)** | Complete testing framework | Developers |
+| **[📝 Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)** | Complete implementation details | Technical/Managers |
+
+### 🚀 AWS LocalStack Documentation
+| Document | Description | Purpose |
+|-----------|-------------|---------|
+| **[LOCALSTACK_IMPLEMENTATION.md](LOCALSTACK_IMPLEMENTATION.md)** | Complete LocalStack implementation | Implementation guide |
+| **[QUICKREF_AWS.md](QUICKREF_AWS.md)** | AWS quick reference card | Quick commands |
 
 ### 📚 Referencias Rápidas
 ```bash

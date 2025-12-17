@@ -47,9 +47,9 @@ test-terraform: ## Run Terraform tests
 	@echo "🏗️  Running Terraform tests..."
 	@./tests/test-terraform.sh
 
-test-e2e: ## Run end-to-end tests
+test-e2e: ## Run end-to-end tests with LocalStack
 	@echo "🔄 Running E2E tests..."
-	@./tests/e2e_test.sh
+	@./tests/e2e/run-all-e2e-tests.sh
 
 benchmark: ## Run Go benchmarks
 	@echo "⚡ Running benchmarks..."
@@ -78,6 +78,40 @@ validate: ## Validate before commit
 
 lint: ## Lint Go code
 	@cd nx-sandbox && golangci-lint run || go fmt ./...
+
+## AWS LocalStack Commands
+
+setup-aws: ## Start LocalStack with AWS services
+	@echo "🚀 Starting LocalStack..."
+	@docker-compose -f config/docker-compose.yml up -d localstack
+	@echo "⏳ Initializing AWS services..."
+	@./config/aws-setup/init-all.sh
+	@echo "✅ LocalStack ready!"
+
+stop-aws: ## Stop LocalStack services
+	@echo "⏸️  Stopping LocalStack..."
+	@docker-compose -f config/docker-compose.yml stop localstack
+	@echo "✅ LocalStack stopped!"
+
+clean-aws: ## Remove LocalStack and all data
+	@echo "🧹 Cleaning LocalStack..."
+	@docker-compose -f config/docker-compose.yml down
+	@docker volume rm devx-terraform-sandbox_localstack_data 2>/dev/null || true
+	@echo "✅ LocalStack cleaned!"
+
+restart-aws: clean-aws setup-aws ## Restart LocalStack with fresh data
+
+status-aws: ## Check LocalStack status
+	@echo "📊 LocalStack Status:"
+	@curl -s http://localhost:4566/_localstack/health | jq '.' || echo "❌ LocalStack not running"
+
+logs-aws: ## Show LocalStack logs
+	@docker-compose -f config/docker-compose.yml logs -f localstack
+
+shell-aws: ## Open shell with AWS CLI configured for LocalStack
+	@echo "🐚 Opening AWS CLI shell (configured for LocalStack)"
+	@echo "Use: aws --endpoint-url=http://localhost:4566 <service> <command>"
+	@docker run --rm -it --network=host -e AWS_ACCESS_KEY_ID=test -e AWS_SECRET_ACCESS_KEY=test -e AWS_DEFAULT_REGION=us-east-1 amazon/aws-cli --endpoint-url=http://localhost:4566 configure list
 
 ## Cleanup Commands
 

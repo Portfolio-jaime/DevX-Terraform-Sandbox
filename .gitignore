@@ -1,0 +1,258 @@
+# DevX Terraform Sandbox .gitignore
+
+# ============================================================================
+# Go binaries and build artifacts
+# ============================================================================
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+nx-sandbox/nx-sandbox
+nx-sandbox/nx-sandbox.exe
+
+# Go test binary, built with `go test -c`
+*.test
+
+# Go coverage files
+*.out
+coverage.txt
+coverage.html
+
+# Go mod cache and vendor
+go.sum
+vendor/
+
+# ============================================================================
+# CLI and Testing Artifacts
+# ============================================================================
+
+# Real CLI cloned from GitHub
+cli-real/
+cli-local/
+
+# CLI binary builds
+tf_nx
+tf_nx.exe
+nx-terraform-builder
+
+# Test artifacts (generated during testing)
+test-artifacts/
+local-artifacts/
+temp-artifacts/
+
+# Test working directories
+test-working-*/
+temp-test-*/
+
+# ============================================================================
+# Logs and Temporary Files
+# ============================================================================
+
+# All log files
+logs/*.log
+logs/*.txt
+*.log
+*.tmp
+
+# Temporary directories
+tmp/
+temp/
+.tmp/
+
+# Test output files
+test-output/
+test-results/
+*-test-output.txt
+*-test-results.txt
+
+# ============================================================================
+# System and IDE Files
+# ============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# IDE/Editor files
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.idea/
+*.swp
+*.swo
+*~
+.project
+.metadata
+.settings/
+
+# ============================================================================
+# Docker and LocalStack
+# ============================================================================
+
+# Docker volumes and data
+docker-data/
+localstack-data/
+
+# Docker override files (if any)
+docker-compose.override.yml
+
+# ============================================================================
+# Terraform and AWS
+# ============================================================================
+
+# Terraform files (if generated during testing)
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+*.tfplan
+*.tfvars
+!example.tfvars
+
+# AWS credentials (just in case)
+.aws/credentials
+aws-credentials.json
+
+# ============================================================================
+# Node.js (if any JS tooling is added)
+# ============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# ============================================================================
+# Python (if any Python scripts are added)
+# ============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ============================================================================
+# Sandbox Specific
+# ============================================================================
+
+# GitHub simulator artifacts
+github-simulator/temp/
+github-simulator/*.log
+
+# Generated scripts and configs
+generated-*/
+auto-generated-*/
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+
+# ============================================================================
+# AI Assistant Files (Claude, etc.)
+# ============================================================================
+
+# Claude conversation and session files
+.claude_conversation
+.claude_history
+.claude_session*
+.claude_cache/
+claude-session-*
+claude-*.json
+.claude/
+.anthropic/
+CLAUDE.md
+
+# Other AI assistant files
+.cursor/
+.github-copilot/
+.openai/
+
+# ============================================================================
+# Security and Secrets
+# ============================================================================
+
+# Any potential secret files
+*.pem
+*.key
+*.crt
+*.p12
+secrets.yaml
+secrets.json
+.env.local
+.env.secrets
+
+# SSH keys (just in case)
+id_rsa*
+id_ed25519*
+
+# ============================================================================
+# Performance and Profiling
+# ============================================================================
+
+# Go profiling files
+cpu.prof
+mem.prof
+*.prof
+
+# Benchmark results
+benchmark-*.txt
+benchmark-*.json
+
+# ============================================================================
+# Documentation builds (if generated)
+# ============================================================================
+_site/
+.jekyll-cache/
+.jekyll-metadata
+
+# ============================================================================
+# Custom patterns for this project
+# ============================================================================
+
+# Cloned repositories during testing (keep structure but not content)
+repos/*/
+!repos/README.md
+!repos/.gitkeep
+
+# But keep the mock data structure
+!repos/nexus-infrastructure/
+!repos/nx-artifacts-inventory/
+!repos/nx-bolt-environment-*/
+
+# Testing state files
+.test-state
+.test-session-*
+
+# CLI command outputs
+command-output-*.txt
+cli-output-*.log
